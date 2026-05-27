@@ -1,0 +1,5 @@
+ollama
+express
+cors
+axios
+dotenv
