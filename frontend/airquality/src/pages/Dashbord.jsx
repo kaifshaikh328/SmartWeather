@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
@@ -92,6 +93,7 @@ function getHumidityStatus(value) {
   return 'Humid'
 }
 
+
 function getWindStatus(value) {
   if (typeof value !== 'number') return 'Unknown'
 
@@ -150,7 +152,7 @@ export default function SmartWeatherUI() {
   const [error, setError] = useState('')
   const [loadingMessage, setLoadingMessage] = useState('Fetching weather data...')
   const [aiText, setAiText] = useState('')
-
+  const navigate=useNavigate();
   // Debounce city changes to prevent duplicate requests
   const debouncedCity = useDebounce(city, 300)
 
@@ -308,6 +310,8 @@ export default function SmartWeatherUI() {
     { label: 'Air Purity', value: dashboard?.current?.airPurity ?? 0, color: 'bg-green-400', width: `${dashboard?.current?.airPurity ?? 0}%` },
   ]
 
+
+
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-950 via-blue-950 to-slate-900 text-white p-6 font-sans">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-[320px_1fr] gap-6">
@@ -321,12 +325,14 @@ export default function SmartWeatherUI() {
               <p className="text-sm text-slate-300">AI Climate Dashboard</p>
             </div>
           </div>
-
+          
           <div className="space-y-4">
-            <button className="w-full bg-cyan-400 hover:bg-cyan-300 transition-all text-black py-3 rounded-2xl font-semibold">
+            <button onClick={()=>navigate("/")}
+            className="w-full bg-cyan-400 hover:bg-cyan-300 transition-all text-black py-3 rounded-2xl font-semibold">
               Dashboard
             </button>
-            <button className="w-full bg-white/10 hover:bg-white/20 transition-all py-3 rounded-2xl font-medium">
+            <button onClick={()=>navigate("/Forcast")} 
+            className="w-full bg-white/10 hover:bg-white/20 transition-all py-3 rounded-2xl font-medium">
               Forecast
             </button>
             <button className="w-full bg-white/10 hover:bg-white/20 transition-all py-3 rounded-2xl font-medium">
