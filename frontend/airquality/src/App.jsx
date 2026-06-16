@@ -2,7 +2,7 @@ import {Routes, Route, } from 'react-router-dom';
 import Dashbord from './pages/Dashbord';
 import Forcast from './pages/Forcast';
 import Airquality from './pages/Airquaility'
-
+import Aireports from './pages/Aireports';
 
 
 
@@ -15,7 +15,7 @@ function App() {
         <Route path="/" element={<Dashbord />} />
         <Route path='/Forcast' element={<Forcast/>}/>
         <Route path='/Airquality' element={<Airquality/>}/>
-        {/* <Route path='/Aireports' element={<Aireports/>}/>  */}
+        <Route path='/Aireports' element={<Aireports/>}/> 
         
       </Routes>
       
