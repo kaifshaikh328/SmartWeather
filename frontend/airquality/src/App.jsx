@@ -13,7 +13,9 @@ function App() {
       <Routes>
         
         <Route path="/" element={<Dashbord />} />
-        <Route onclick={Forcast} path='/Forcast' element={<Forcast/>}/>
+        <Route path='/Forcast' element={<Forcast/>}/>
+        <Route path='/Airquality' element={<Airquality/>}/>
+        {/* <Route path='/Aireports' element={<Aireports/>}/>  */}
         
       </Routes>
       

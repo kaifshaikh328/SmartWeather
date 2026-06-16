@@ -335,10 +335,12 @@ export default function SmartWeatherUI() {
             className="w-full bg-white/10 hover:bg-white/20 transition-all py-3 rounded-2xl font-medium">
               Forecast
             </button>
-            <button className="w-full bg-white/10 hover:bg-white/20 transition-all py-3 rounded-2xl font-medium">
+            <button onClick={()=>navigate("/Airquality")}
+            className="w-full bg-white/10 hover:bg-white/20 transition-all py-3 rounded-2xl font-medium">
               Air Quality
             </button>
-            <button className="w-full bg-white/10 hover:bg-white/20 transition-all py-3 rounded-2xl font-medium">
+            <button onClick={()=>navigate("/Aireports")}
+            className="w-full bg-white/10 hover:bg-white/20 transition-all py-3 rounded-2xl font-medium">
               AI Insights
             </button>
           </div>
