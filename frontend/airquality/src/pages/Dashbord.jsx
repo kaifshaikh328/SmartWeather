@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import Sidebar from '../components/sidebar'
+import Header from '../components/Header'
+import WeatherCard from '../components/Weathercard'
+import AIInsight from '../components/AIInsight'
+import AirQualityCard from '../components/AirQualityCard'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || ''
+const API_BASE_URL = (() => {
+  if (!rawBaseUrl) return '/api'
+  const trimmed = rawBaseUrl.trim().replace(/\/+$/, '')
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
+})()
 
 // Debounce utility to prevent duplicate requests
 function useDebounce(value, delay) {
@@ -29,6 +38,17 @@ const iconMap = {
   default: '🌤️',
 }
 
+function parseNumber(value) {
+  if (typeof value === 'number' && !Number.isNaN(value)) return value
+  if (typeof value === 'string') {
+    const normalized = value.trim()
+    if (normalized === '') return undefined
+    const parsed = Number(normalized)
+    return Number.isNaN(parsed) ? undefined : parsed
+  }
+  return undefined
+}
+
 function getConditionIcon(condition = '') {
   const normalized = String(condition).toLowerCase()
 
@@ -42,24 +62,27 @@ function getConditionIcon(condition = '') {
 }
 
 function formatTemperature(value) {
-  if (typeof value === 'number') {
-    return `${Math.round(value)}°`
+  const num = parseNumber(value)
+  if (num != null) {
+    return `${Math.round(num)}°`
   }
 
   return value || '—'
 }
 
 function formatValue(value, suffix = '') {
-  if (typeof value === 'number') {
-    return `${Math.round(value * 10) / 10}${suffix}`
+  const num = parseNumber(value)
+  if (num != null) {
+    return `${Math.round(num * 10) / 10}${suffix}`
   }
 
   return value || '—'
 }
 
 function formatWindSpeed(value) {
-  if (typeof value === 'number') {
-    return Math.round(value)
+  const num = parseNumber(value)
+  if (num != null) {
+    return `${Math.round(num)}`
   }
   return value || '—'
 }
@@ -136,7 +159,7 @@ function normalizeDashboard(payload) {
       pm25: airQuality.pollutants?.pm2_5 ?? airQuality.pm25,
       wind: formatWindSpeed(weather.wind_speed ?? weather.wind),
       rainProbability: weather.rainProbability ?? 0,
-      airPurity: 100 - (airQuality.air_quality_index ?? 0) * 10,
+      airPurity: 100 - ((airQuality.air_quality_index ?? airQuality.aqi ?? 0) * 10),
       alert: airQuality.health_advice || 'Live climate update pending.',
       summary: aiAnalysis || 'The backend is providing live insights.',
     },
@@ -152,7 +175,15 @@ export default function SmartWeatherUI() {
   const [error, setError] = useState('')
   const [loadingMessage, setLoadingMessage] = useState('Fetching weather data...')
   const [aiText, setAiText] = useState('')
-  const navigate=useNavigate();
+  const handleSearch = (event) => {
+    event.preventDefault()
+    if (query.trim()) {
+      setCity(query.trim())
+      setLoading(true)
+      setLoadingMessage('Fetching data for ' + query.trim() + '...')
+    }
+  }
+
   // Debounce city changes to prevent duplicate requests
   const debouncedCity = useDebounce(city, 300)
 
@@ -315,87 +346,17 @@ export default function SmartWeatherUI() {
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-950 via-blue-950 to-slate-900 text-white p-6 font-sans">
       <div className="max-w-7xl mx-auto grid lg:grid-cols-[320px_1fr] gap-6">
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 shadow-2xl border border-white/10">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-2xl bg-cyan-400 flex items-center justify-center text-black font-bold text-xl">
-              SW
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">SmartWeather</h1>
-              <p className="text-sm text-slate-300">AI Climate Dashboard</p>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <button onClick={()=>navigate("/")}
-            className="w-full bg-cyan-400 hover:bg-cyan-300 transition-all text-black py-3 rounded-2xl font-semibold">
-              Dashboard
-            </button>
-            <button onClick={()=>navigate("/Forcast")} 
-            className="w-full bg-white/10 hover:bg-white/20 transition-all py-3 rounded-2xl font-medium">
-              Forecast
-            </button>
-            <button onClick={()=>navigate("/Airquality")}
-            className="w-full bg-white/10 hover:bg-white/20 transition-all py-3 rounded-2xl font-medium">
-              Air Quality
-            </button>
-            <button onClick={()=>navigate("/Aireports")}
-            className="w-full bg-white/10 hover:bg-white/20 transition-all py-3 rounded-2xl font-medium">
-              AI Insights
-            </button>
-          </div>
-
-          <div className="mt-10 bg-linear-to-br from-cyan-500 to-blue-600 rounded-3xl p-5 shadow-xl">
-            <h2 className="text-xl font-bold mb-2">Environmental Alert</h2>
-            <p className="text-sm text-slate-100 leading-relaxed">
-              {loading && loadingMessage ? (
-                <span className="flex items-center gap-2">
-                  <span className="inline-block w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                  {loadingMessage}
-                </span>
-              ) : error ? (
-                `⚠️ Error: ${error}`
-              ) : (
-                dashboard?.current?.alert || 'Live climate update pending.'
-              )}
-            </p>
-          </div>
-        </div>
+        <Sidebar />
 
         <div className="space-y-6">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/10 backdrop-blur-xl rounded-3xl p-5 border border-white/10 shadow-xl">
-            <div>
-              <h2 className="text-3xl font-bold">{locationLabel}</h2>
-              <p className="text-slate-300">{currentDate}</p>
-            </div>
-
-            <form
-              className="flex gap-3 w-full md:w-auto"
-              onSubmit={(event) => {
-                event.preventDefault()
-                if (query.trim()) {
-                  setCity(query.trim())
-                  setLoading(true)
-                  setLoadingMessage('Fetching data for ' + query.trim() + '...')
-                }
-              }}
-            >
-              <input
-                type="text"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search city..."
-                className="bg-white/10 border border-white/20 rounded-2xl px-4 py-3 outline-none w-full md:w-80"
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-cyan-400 hover:bg-cyan-300 disabled:bg-cyan-600 disabled:cursor-not-allowed text-black px-6 rounded-2xl font-semibold transition-all"
-              >
-                {loading ? 'Loading...' : 'Search'}
-              </button>
-            </form>
-          </div>
+          <Header
+          locationLabel={locationLabel}
+          currentDate={currentDate}
+          query={query}
+          setQuery={setQuery}
+          loading={loading}
+          onSearch={handleSearch}
+        />
 
           {error && (
             <div className="bg-red-500/20 border border-red-300/50 text-red-100 rounded-3xl p-4">
@@ -404,77 +365,13 @@ export default function SmartWeatherUI() {
           )}
 
           <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-6">
-            <div className="bg-linear-to-br from-cyan-500 via-blue-600 to-indigo-700 rounded-4xl p-8 shadow-2xl relative overflow-hidden">
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/20 rounded-full blur-2xl"></div>
-
-              <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
-                <div>
-                  <p className="text-lg text-slate-100">Current Weather</p>
-                  <h1 className="text-7xl font-extrabold mt-3">{loading ? '—' : dashboard?.current?.temp || '—'}</h1>
-                  <p className="text-2xl mt-2 font-medium">{loading ? 'Loading...' : dashboard?.current?.condition || 'Unavailable'}</p>
-
-                  <div className="flex gap-6 mt-8 text-sm text-slate-100">
-                    <div>
-                      <p>Feels Like</p>
-                      <h3 className="font-bold text-lg">{loading ? '—' : dashboard?.current?.feelsLike || '—'}</h3>
-                    </div>
-
-                    <div>
-                      <p>Visibility</p>
-                      <h3 className="font-bold text-lg">{loading ? '—' : dashboard?.current?.visibility || '—'}</h3>
-                    </div>
-
-                    <div>
-                      <p>UV Index</p>
-                      <h3 className="font-bold text-lg">{loading ? '—' : dashboard?.current?.uvIndex || '—'}</h3>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-[150px] animate-pulse">
-                  {loading ? '🌤️' : getConditionIcon(dashboard?.current?.condition || '')}
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-xl rounded-4xl p-6 border border-white/10 shadow-2xl">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">AI Weather Insight</h2>
-                <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                  loading ? 'bg-yellow-400 text-black' : 'bg-cyan-400 text-black'
-                }`}>
-                  {loading ? 'PROCESSING' : 'LIVE'}
-                </div>
-              </div>
-
-              <p className="text-slate-300 leading-relaxed text-[15px] whitespace-pre-wrap min-h-24">
-                {loading && loadingMessage ? (
-                  <span className="flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>
-                    {loadingMessage}
-                  </span>
-                ) : aiText ? (
-                  <>
-                    {aiText}
-                    {loading && <span className="inline-block w-2 h-2 bg-cyan-400 ml-1 animate-pulse"></span>}
-                  </>
-                ) : (
-                  'No AI insight has been returned yet.'
-                )}
-              </p>
-
-              <div className="mt-6 grid grid-cols-2 gap-4">
-                <div className="bg-white/10 rounded-2xl p-4">
-                  <p className="text-sm text-slate-300">Sunrise</p>
-                  <h3 className="text-xl font-bold mt-1">{loading ? '—' : dashboard?.current?.sunrise || '—'}</h3>
-                </div>
-
-                <div className="bg-white/10 rounded-2xl p-4">
-                  <p className="text-sm text-slate-300">Sunset</p>
-                  <h3 className="text-xl font-bold mt-1">{loading ? '—' : dashboard?.current?.sunset || '—'}</h3>
-                </div>
-              </div>
-            </div>
+            <WeatherCard dashboard={dashboard} loading={loading} />
+            <AIInsight
+              loading={loading}
+              loadingMessage={loadingMessage}
+              aiText={aiText}
+              dashboard={dashboard}
+            />
           </div>
 
           <div className="bg-white/10 backdrop-blur-xl rounded-4xl p-6 border border-white/10 shadow-2xl">
@@ -487,14 +384,7 @@ export default function SmartWeatherUI() {
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
               {airData.map((item, index) => (
-                <div
-                  key={index}
-                  className="bg-slate-900/50 rounded-3xl p-5 border border-white/10 hover:scale-105 transition-all"
-                >
-                  <p className="text-slate-400 text-sm">{item.label}</p>
-                  <h3 className="text-3xl font-bold mt-2">{item.value}</h3>
-                  <p className="text-cyan-300 mt-2 text-sm">{item.status}</p>
-                </div>
+                <AirQualityCard key={index} item={item} loading={loading} />
               ))}
             </div>
           </div>
