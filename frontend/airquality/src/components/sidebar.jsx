@@ -1,8 +1,23 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
-export default function Sidebar() {
+export default function Sidebar({ onButtonClick }) {
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const handleButtonClick = (path) => {
+    if (onButtonClick) {
+      onButtonClick()
+    }
+    navigate(path)
+  }
+
+  const navItems = [
+    { label: 'Dashboard', path: '/' },
+    { label: 'Forecast', path: '/Forcast' },
+    { label: 'Air Quality', path: '/Airquality' },
+    { label: 'AI Insights', path: '/Aireports' },
+  ]
 
   return (
     <aside className="bg-white/10 backdrop-blur-xl rounded-3xl p-6">
@@ -17,30 +32,23 @@ export default function Sidebar() {
       </div>
 
       <div className="space-y-4">
-        <button
-          onClick={() => navigate('/')}
-          className="w-full bg-cyan-400 hover:bg-cyan-300 transition-all text-black py-3 rounded-2xl font-semibold"
-        >
-          Dashboard
-        </button>
-        <button
-          onClick={() => navigate('/Forcast')}
-          className="w-full bg-white/10 hover:bg-white/20 transition-all py-3 rounded-2xl font-medium"
-        >
-          Forecast
-        </button>
-        <button
-          onClick={() => navigate('/Airquality')}
-          className="w-full bg-white/10 hover:bg-white/20 transition-all py-3 rounded-2xl font-medium"
-        >
-          Air Quality
-        </button>
-        <button
-          onClick={() => navigate('/Aireports')}
-          className="w-full bg-white/10 hover:bg-white/20 transition-all py-3 rounded-2xl font-medium"
-        >
-          AI Insights
-        </button>
+        {navItems.map(({ label, path }) => {
+          const isActive = location.pathname === path
+
+          return (
+            <button
+              key={label}
+              onClick={() => handleButtonClick(path)}
+              className={`w-full py-3 rounded-2xl font-medium transition-all duration-300 ease-in-out transform hover:-translate-y-0.5 hover:scale-[1.01] ${
+                isActive
+                  ? 'bg-cyan-400 text-black shadow-lg shadow-cyan-400/30'
+                  : 'bg-white/10 text-white hover:bg-cyan-300 hover:text-black'
+              }`}
+            >
+              {label}
+            </button>
+          )
+        })}
       </div>
     </aside>
   )
