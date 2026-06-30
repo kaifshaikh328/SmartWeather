@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState, useRef } from 'react'
 import Sidebar from '../components/sidebar'
 
 const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || ''
 const API_BASE_URL = (() => {
-  if (!rawBaseUrl) return '/api'
-  const trimmed = rawBaseUrl.trim().replace(/\/+$/, '')
+  const base = rawBaseUrl.trim()
+  if (!base) return '/api'
+  const trimmed = base.replace(/\/+$/, '')
   return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
 })()
 
@@ -14,6 +15,9 @@ function Aireports() {
   const [error, setError] = useState('')
   const [isClicked, setIsClicked] = useState(false)
   const [sidebarClicked, setSidebarClicked] = useState(false)
+  const [fullReport, setFullReport] = useState('')
+  const [streaming, setStreaming] = useState(false)
+  const esRef = useRef(null)
 
   const loadAiReport = useCallback(async () => {
     setIsClicked(true)
@@ -42,9 +46,70 @@ function Aireports() {
     }
   }, [])
 
+  // Start Server-Sent Events stream to receive the full Ollama report
+  const startAiStream = useCallback(() => {
+    setIsClicked(true)
+    setStreaming(true)
+    setFullReport('')
+    setError('')
+
+    const url = `${API_BASE_URL}/weather/stream?city=${encodeURIComponent('Pune')}`
+
+    // Close previous connection if any
+    if (esRef.current) {
+      try { esRef.current.close() } catch (e) {}
+      esRef.current = null
+    }
+
+    const es = new EventSource(url)
+    esRef.current = es
+
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data)
+        if (data.type === 'chunk') {
+          setFullReport(prev => prev + (data.text || ''))
+        } else if (data.type === 'metadata') {
+          // optionally use metadata
+        } else if (data.type === 'complete') {
+          setStreaming(false)
+          try { es.close() } catch (err) {}
+          esRef.current = null
+        } else if (data.type === 'error') {
+          setError(data.message || 'Stream error')
+          setStreaming(false)
+          try { es.close() } catch (err) {}
+          esRef.current = null
+        }
+      } catch (parseErr) {
+        // If not JSON, append raw data
+        setFullReport(prev => prev + e.data)
+      }
+    }
+
+    es.onerror = (err) => {
+      setError('Stream connection error')
+      setStreaming(false)
+      if (esRef.current) {
+        try { esRef.current.close() } catch (e) {}
+        esRef.current = null
+      }
+    }
+  }, [])
+
   useEffect(() => {
     loadAiReport()
   }, [loadAiReport])
+
+  // cleanup SSE on unmount
+  useEffect(() => {
+    return () => {
+      if (esRef.current) {
+        try { esRef.current.close() } catch (e) {}
+        esRef.current = null
+      }
+    }
+  }, [])
 
   const summaryText = loading
     ? 'Your AI suggestion will appear after the backend returns the live forecast.'
@@ -70,10 +135,22 @@ function Aireports() {
                 ? 'bg-cyan-400 text-slate-900' 
                 : 'bg-white text-black'
             }`}
-            onClick={loadAiReport}
+            onClick={startAiStream}
           >
             Generate Full AI Report
           </button>
+
+          {streaming && (
+            <div className="mt-4 text-sm text-slate-100">
+              Streaming full AI report...
+            </div>
+          )}
+
+          {fullReport && (
+            <pre className="mt-4 p-4 bg-white/5 rounded-lg text-slate-100 overflow-auto whitespace-pre-wrap">
+              {fullReport}
+            </pre>
+          )}
         </div>
       </div>
     </div>
