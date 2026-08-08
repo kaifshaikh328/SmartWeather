@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react'
 import Sidebar from '../components/sidebar'
+import { getDefaultCity } from '../utils/cityStorage'
 
 const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || ''
 const API_BASE_URL = (() => {
@@ -10,6 +11,7 @@ const API_BASE_URL = (() => {
 })()
 
 function Aireports() {
+  const defaultCity = getDefaultCity()
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -25,7 +27,7 @@ function Aireports() {
     setError('')
 
     try {
-      const response = await fetch(`${API_BASE_URL}/weather?city=${encodeURIComponent('Pune')}`)
+      const response = await fetch(`${API_BASE_URL}/weather?city=${encodeURIComponent(defaultCity)}`)
 
       if (!response.ok) {
         throw new Error(`Backend returned ${response.status}`)
@@ -44,7 +46,7 @@ function Aireports() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [defaultCity])
 
   // Start Server-Sent Events stream to receive the full Ollama report
   const startAiStream = useCallback(() => {
@@ -53,7 +55,7 @@ function Aireports() {
     setFullReport('')
     setError('')
 
-    const url = `${API_BASE_URL}/weather/stream?city=${encodeURIComponent('Pune')}`
+    const url = `${API_BASE_URL}/weather/stream?city=${encodeURIComponent(defaultCity)}`
 
     // Close previous connection if any
     if (esRef.current) {

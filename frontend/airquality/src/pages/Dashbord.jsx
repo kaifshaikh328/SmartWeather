@@ -4,6 +4,7 @@ import Header from '../components/Header'
 import WeatherCard from '../components/Weathercard'
 import AIInsight from '../components/AIInsight'
 import AirQualityCard from '../components/AirQualityCard'
+import { getDefaultCity, setDefaultCity } from '../utils/cityStorage'
 
 const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || ''
 const API_BASE_URL = (() => {
@@ -168,8 +169,9 @@ function normalizeDashboard(payload) {
 }
 
 export default function SmartWeatherUI() {
-  const [query, setQuery] = useState('Pune')
-  const [city, setCity] = useState('Pune')
+  const defaultCity = getDefaultCity()
+  const [query, setQuery] = useState(defaultCity)
+  const [city, setCity] = useState(defaultCity)
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -178,9 +180,11 @@ export default function SmartWeatherUI() {
   const handleSearch = (event) => {
     event.preventDefault()
     if (query.trim()) {
-      setCity(query.trim())
+      const normalizedQuery = query.trim()
+      setCity(normalizedQuery)
+      setDefaultCity(normalizedQuery)
       setLoading(true)
-      setLoadingMessage('Fetching data for ' + query.trim() + '...')
+      setLoadingMessage('Fetching data for ' + normalizedQuery + '...')
     }
   }
 

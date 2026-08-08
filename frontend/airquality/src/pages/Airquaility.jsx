@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Sidebar from '../components/sidebar'
 import AirQualityCard from '../components/AirQualityCard'
+import { getDefaultCity } from '../utils/cityStorage'
 
 const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || ''
 const API_BASE_URL = (() => {
@@ -73,7 +74,7 @@ function normalizeDashboard(payload) {
 }
 
 export default function Airquaility() {
-  const [city, setCity] = useState('Pune')
+  const [city, setCity] = useState(getDefaultCity())
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
